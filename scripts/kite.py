@@ -388,62 +388,10 @@ def main():
         if k != "refresh_token":
             log("  %s = %s" % (k, json.dumps(v, ensure_ascii=False)[:200]))
     raw = decrypt_config(blob)
-    log("decrypted size=%d head=%s" % (len(raw), raw[:120]))
-    n_top = r.get("nodes") or []
-    log("top-level nodes=%d more_nodes=%d" % (len(n_top), len(r.get("more_nodes") or [])))
-    if n_top:
-        log("top node sample: %s" % json.dumps(n_top[:2], ensure_ascii=False))
-    cblob2 = r.get("config") or ""
-    if cblob2:
-        try:
-            craw2 = decrypt_config(cblob2)
-            log("top config decrypted size=%d head=%s" % (len(craw2), craw2[:200]))
-            ccfg2 = json.loads(craw2.decode())
-            log("top config keys=%s" % sorted(ccfg2.keys()))
-            for idx, o in enumerate(ccfg2.get("outbounds", [])[:5]):
-                log("T-outbound[%d] %s" % (idx, json.dumps(o, ensure_ascii=False)[:400]))
-        except Exception as exc:
-            log("top config fail: %s" % exc)
-    ui = r.get("userinfo") or ""
-    if ui:
-        try:
-            uraw = decrypt_config(ui)
-            log("userinfo decrypted size=%d head=%s" % (len(uraw), uraw[:400]))
-            try:
-                uj = json.loads(uraw.decode())
-                log("userinfo json keys=%s" % sorted(uj.keys()) if isinstance(uj, dict) else "list len=%d" % len(uj))
-                for idx, o in enumerate((uj.get("outbounds") if isinstance(uj, dict) else uj) or []):
-                    log("U-outbound[%d] %s" % (idx, json.dumps(o, ensure_ascii=False)[:450]))
-            except Exception as exc:
-                log("userinfo not json: %s" % exc)
-        except Exception as exc:
-            log("userinfo decrypt fail: %s" % exc)
+    log("decrypted config size=%d" % len(raw))
     cfg = json.loads(raw.decode())
-    log("cfg top keys=%s" % sorted(cfg.keys()))
-    for idx, o in enumerate(cfg.get("outbounds", [])):
-        log("K-outbound[%d] %s" % (idx, json.dumps(o, ensure_ascii=False)[:500]))
-    log("cfg inbounds=%s" % json.dumps(cfg.get("inbounds"), ensure_ascii=False)[:300])
-    n_old = cfg.get("nodes") or []
-    n_up = cfg.get("upgrade_nodes") or []
-    log("nodes=%d upgrade_nodes=%d" % (len(n_old), len(n_up)))
-    cblob = cfg.get("config") or ""
-    if cblob:
-        craw = decrypt_config(cblob)
-        log("config decrypted size=%d head=%s" % (len(craw), craw[:150]))
-        try:
-            ccfg = json.loads(craw.decode())
-            log("config keys=%s" % sorted(ccfg.keys()))
-            for idx, o in enumerate(ccfg.get("outbounds", [])[:4]):
-                log("outbound[%d] keys=%s val=%s" % (idx, sorted(o.keys()),
-                    json.dumps({k: v for k, v in o.items() if k != "tls"}, ensure_ascii=False)[:280]))
-                if o.get("tls"):
-                    log("  tls=%s" % json.dumps(o["tls"], ensure_ascii=False)[:280])
-        except Exception as exc:
-            log("config parse fail: %s" % exc)
-    if n_up:
-        log("upgrade sample: %s" % json.dumps(n_up[:2], ensure_ascii=False))
-
-    uris, seen = [], set()
+    uris = []
+    seen = set()
     for o in cfg.get("outbounds", []):
         if o.get("type") not in ("vless", "tuic"):
             continue
@@ -456,7 +404,10 @@ def main():
         seen.add(u)
         uris.append(u)
     if not uris:
-        raise RuntimeError("no vless nodes parsed")
+        raise RuntimeError(
+            "server returned no node outbounds (got %d outbounds, tags=%s)"
+            % (len(cfg.get("outbounds", [])), [o.get("tag") for o in cfg.get("outbounds", [])])
+        )
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, "w", encoding="utf-8") as f:
         f.write("\n".join(uris) + "\n")
