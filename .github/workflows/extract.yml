@@ -40,12 +40,22 @@ jobs:
           python -m playwright install --with-deps chromium
 
       - name: Extract and encrypt
+        id: extract
         env:
           KITE_ENC_KEY: ${{ secrets.KITE_ENC_KEY }}
         run: |
+          set +e
           python scripts/kite.py
+          rc=$?
+          echo "rc=$rc" >> "$GITHUB_OUTPUT"
+          if [ "$rc" = "3" ]; then
+            echo "已在依赖服务端下发凭据的环节中断，保留上一次产物，本次不推送"
+            exit 0
+          fi
+          exit $rc
 
       - name: Commit encrypted output
+        if: steps.extract.outputs.rc == '0'
         run: |
           git config user.name "actions-bot"
           git config user.email "actions-bot@users.noreply.github.com"

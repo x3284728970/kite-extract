@@ -404,10 +404,14 @@ def main():
         seen.add(u)
         uris.append(u)
     if not uris:
-        raise RuntimeError(
-            "server returned no node outbounds (got %d outbounds, tags=%s)"
-            % (len(cfg.get("outbounds", [])), [o.get("tag") for o in cfg.get("outbounds", [])])
-        )
+        tags = [o.get("tag") for o in cfg.get("outbounds", [])]
+        log("FAIL: server returned no node outbounds (outbounds=%d tags=%s)" % (len(tags), tags))
+        log("FAIL: upgrade_nodes=%d nodes=%d more_nodes=%d"
+            % (len(r.get("upgrade_nodes") or []), len(r.get("nodes") or []),
+               len(r.get("more_nodes") or [])))
+        log("FAIL: server no longer ships node credentials to guest accounts;"
+            " existing output left untouched")
+        return 3
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, "w", encoding="utf-8") as f:
         f.write("\n".join(uris) + "\n")
