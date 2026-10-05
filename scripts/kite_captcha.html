@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>cap</title></head>
+<body><div id="slot"></div><pre id="status">idle</pre>
+<script src="https://ca.turing.captcha.qcloud.com/TJNCaptcha-global.js"></script>
+<script>
+var APPID = '189970138', SLOT = document.getElementById('slot'), STATUS = document.getElementById('status');
+window.__net = [];
+(function () {
+  var _o = XMLHttpRequest.prototype.open, _s = XMLHttpRequest.prototype.send;
+  XMLHttpRequest.prototype.open = function (m, u) { this.__u = u; return _o.apply(this, arguments); };
+  XMLHttpRequest.prototype.send = function (b) {
+    var self = this;
+    this.addEventListener('load', function () { window.__net.push({ u: String(self.__u).slice(0, 80), resp: String(self.responseText).slice(0, 500) }); });
+    return _s.apply(this, arguments);
+  };
+})();
+function build(onResult) {
+  try { window.cap.destroy(); } catch (e) {}
+  SLOT.innerHTML = '';
+  window.cap = new TencentCaptcha(SLOT, APPID, onResult, { userLanguage: 'en' });
+  window.cap.show();
+}
+window.grab = async function () {
+  for (var round = 0; round < 4; round++) {
+    var res = null;
+    window.__net = [];
+    build(function (r) { res = r; });
+    for (var w = 0; w < 25 && !document.getElementById('tencent-captcha-dy__robot_checkBox_id'); w++) {
+      await new Promise(function (r) { setTimeout(r, 200); });
+    }
+    var parsed = null;
+    for (var attempt = 0; attempt < 2 && !parsed; attempt++) {
+      var cb = document.getElementById('tencent-captcha-dy__robot_checkBox_id');
+      if (cb) { cb.click(); }
+      for (var i = 0; i < 16 && !parsed; i++) {
+        await new Promise(function (r) { setTimeout(r, 400); });
+        var v = (window.__net || []).filter(function (n) { return /verify/.test(n.u); }).pop();
+        if (v) {
+          var m = v.resp.match(/"ticket":"([^"]+)"/), m2 = v.resp.match(/"randstr":"([^"]+)"/), ec = v.resp.match(/"errorCode":"([^"]+)"/);
+          if (m) { parsed = m[1] + '|' + m2[1]; }
+          else if (ec && ec[1] !== '0') { parsed = null; break; }
+        }
+        if (res && res.ticket) { parsed = res.ticket + '|' + res.randstr; }
+      }
+    }
+    if (parsed) { STATUS.textContent = 'TICKET|' + parsed; window.__lastTicket = parsed; return parsed; }
+    STATUS.textContent = 'ROUND' + round + '_RETRY';
+    await new Promise(function (r) { setTimeout(r, 400); });
+  }
+  var slider = document.body.innerText.indexOf('puzzle') >= 0;
+  STATUS.textContent = slider ? 'SLIDER' : 'FAIL|no-ticket';
+  return slider ? 'SLIDER' : 'FAIL|no-ticket';
+};
+window.tileParams = function () {
+  var fg = document.querySelector('.tencent-captcha-dy__fg-item');
+  var bgEl = document.querySelector('.tencent-captcha-dy__verify-bg-img');
+  var blk = document.querySelector('.tencent-captcha-dy__slider-block');
+  if (!fg || !bgEl || !blk) return JSON.stringify({ error: 'no slider dom' });
+  return JSON.stringify({ bg: imgURL(bgEl), fg: imgURL(fg), fgPos: getComputedStyle(fg).backgroundPosition, fgBox: box(fg), bgBox: box(bgEl), blkBox: box(blk) });
+};
+function box(e) { var r = e.getBoundingClientRect(); return [Math.round(r.x), Math.round(r.y), e.clientWidth, e.clientHeight]; }
+function imgURL(e) { if (!e) return null; var m = getComputedStyle(e).backgroundImage.match(/url\("([^"]+)"\)/); return m ? m[1] : null; }
+window.dragSlider = async function (dist) {
+  var blk = document.querySelector('.tencent-captcha-dy__slider-block');
+  if (!blk) return 'no-slider';
+  window.__net = [];
+  var r = blk.getBoundingClientRect(), sx = r.x + r.width / 2, sy = r.y + r.height / 2;
+  function mk(x, y) { return new Touch({ identifier: 1, target: blk, clientX: x, clientY: y, radiusX: 12, radiusY: 12, force: 0.6 }); }
+  function fire(t, x, y) {
+    var tp = mk(x, y);
+    blk.dispatchEvent(new TouchEvent(t, { bubbles: true, cancelable: true, touches: (t === 'touchend' ? [] : [tp]), targetTouches: (t === 'touchend' ? [] : [tp]), changedTouches: [tp] }));
+  }
+  fire('touchstart', sx, sy);
+  await new Promise(function (r2) { setTimeout(r2, 140); });
+  var steps = 42;
+  for (var i = 1; i <= steps; i++) {
+    var p = i / steps, e = p < 0.8 ? p * 1.05 : 0.84 + (p - 0.8) * 0.8;
+    fire('touchmove', sx + dist * Math.min(e, 1), sy + (Math.random() - 0.5) * 1.6);
+    await new Promise(function (r2) { setTimeout(r2, p < 0.8 ? 9 : 32); });
+  }
+  fire('touchend', sx + dist, sy);
+  await new Promise(function (r2) { setTimeout(r2, 3200); });
+  var v = (window.__net || []).filter(function (n) { return /verify/.test(n.u); }).pop();
+  var resp = v ? v.resp : '';
+  var m = resp.match(/"ticket":"([^"]+)"/), m2 = resp.match(/"randstr":"([^"]+)"/), ec = resp.match(/"errorCode":"([^"]+)"/);
+  if (m) { STATUS.textContent = 'TICKET|' + m[1] + '|RANDSTR|' + m2[1]; return m[1] + '|' + m2[1]; }
+  STATUS.textContent = 'DRAG_FAIL|ec=' + (ec && ec[1]);
+  return 'FAIL|ec=' + (ec && ec[1]) + '|' + document.body.innerText.slice(-60);
+};
+</script></body></html>

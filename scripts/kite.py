@@ -374,6 +374,10 @@ def main():
     if not blob:
         raise RuntimeError("no refresh_token: %s" % json.dumps(r, ensure_ascii=False)[:200])
     cfg = json.loads(decrypt_config(blob).decode())
+    types = {}
+    for o in cfg.get("outbounds", []):
+        types[o.get("type")] = types.get(o.get("type"), 0) + 1
+    log("outbound types: %s" % json.dumps(types, ensure_ascii=False))
 
     uris, seen = [], set()
     for o in cfg.get("outbounds", []):
