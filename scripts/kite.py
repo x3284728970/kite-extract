@@ -56,7 +56,9 @@ def find_chrome():
         return c
     home = os.path.expanduser("~")
     pats = [
+        home + "/.cache/ms-playwright/chromium-*/chrome-linux64/chrome",
         home + "/.cache/ms-playwright/chromium-*/chrome-linux/chrome",
+        home + "/.cache/ms-playwright/chromium_headless_shell-*/chrome-linux64/headless_shell",
         home + "/.cache/ms-playwright/chromium_headless_shell-*/chrome-linux/headless_shell",
         "/usr/bin/chromium", "/usr/bin/chromium-browser",
     ]
