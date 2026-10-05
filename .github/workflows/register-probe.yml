@@ -9,7 +9,7 @@ on:
       stage:
         description: "send | register"
         required: true
-        default: "send"
+        default: "grab_only.py"
 
 jobs:
   probe:
@@ -40,8 +40,9 @@ jobs:
       - name: Run stage
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          STAGE_SCRIPT: ${{ inputs.stage }}
         run: |
           set +e
-          python scripts/register_stage.py "${{ inputs.stage }}"
+          python scripts/${STAGE_SCRIPT}
           echo "rc=$?"
           exit 0
