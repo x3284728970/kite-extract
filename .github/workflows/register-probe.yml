@@ -5,11 +5,16 @@ permissions:
 
 on:
   workflow_dispatch:
+    inputs:
+      stage:
+        description: "send | register"
+        required: true
+        default: "send"
 
 jobs:
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     steps:
       - name: Checkout
@@ -32,9 +37,11 @@ jobs:
           pip install -r requirements.txt playwright websocket-client
           python -m playwright install --with-deps chromium
 
-      - name: Register probe
+      - name: Run stage
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set +e
-          python scripts/stage1_ticket.py
-          echo "rc=$?" >> "$GITHUB_STEP_SUMMARY"
+          python scripts/register_stage.py "${{ inputs.stage }}"
+          echo "rc=$?"
           exit 0
