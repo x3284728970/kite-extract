@@ -94,33 +94,33 @@ def main():
     K.log("收到验证码: %s" % code)
     account["code"] = code
 
-    # 第二步：带码完成注册（每次都要新鲜票据）
+    # 第二步：带码完成注册（每步新鲜票据，间隔开避开限流）
     final = None
+    K.log("等 35 秒避开限流...")
+    time.sleep(35)
     for key in ["code", "verify_code", "email_code", "emailCode", "verification_code"]:
         try:
             t3, r3 = K.grab_ticket(chrome, port + 2)
             one3 = K.exchange(t3, r3)
         except Exception as e:
             K.log("取票据失败: %s" % str(e)[:100])
-            break
+            time.sleep(20)
+            continue
         for body in [
             {"email": addr, "password": pw, key: code,
              "captcha_ticket": one3, "randstr": r3},
-            {"email": addr, "password": pw, key: code,
-             "captcha_ticket": one3, "randstr": r3, "code_type": "email"},
             {"email": addr, "password": pw, "captcha_ticket": one3, "randstr": r3,
              "verify_code": code},
         ]:
             r2 = K.http_json(K.API + "/auth/register", body)
-            desc = ",".join(sorted(body.keys()))
-            K.log("注册[%s|%s]: %s" % (key, desc, json.dumps(r2, ensure_ascii=False)[:170]))
+            K.log("注册[%s]: %s" % (key, json.dumps(r2, ensure_ascii=False)[:170]))
             if (r2.get("code") == 0 or r2.get("access_token")
                     or r2.get("refresh_token") or "token" in json.dumps(r2)):
                 final = r2
                 account["field"] = key
-                account["payload_keys"] = list(body.keys())
+                account["payload_keys"] = sorted(body.keys())
                 break
-            time.sleep(0.6)
+            time.sleep(2)
         if final:
             break
 
