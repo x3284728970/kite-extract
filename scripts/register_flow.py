@@ -94,35 +94,28 @@ def main():
     K.log("收到验证码: %s" % code)
     account["code"] = code
 
-    # 第二步：带码完成注册（每步新鲜票据，间隔开避开限流）
+    # 第二步：带码完成注册（单次提交，避免触发 1011 限流）
     final = None
-    K.log("等 35 秒避开限流...")
-    time.sleep(35)
-    for key in ["code", "verify_code", "email_code", "emailCode", "verification_code"]:
-        try:
-            t3, r3 = K.grab_ticket(chrome, port + 2)
-            one3 = K.exchange(t3, r3, "register")
-        except Exception as e:
-            K.log("取票据失败: %s" % str(e)[:100])
-            time.sleep(20)
-            continue
-        for body in [
-            {"email": addr, "password": pw, key: code,
-             "captcha_ticket": one3, "randstr": r3},
-            {"email": addr, "password": pw, "captcha_ticket": one3, "randstr": r3,
-             "verify_code": code},
-        ]:
-            r2 = K.http_json(K.API + "/auth/register", body)
-            K.log("注册[%s]: %s" % (key, json.dumps(r2, ensure_ascii=False)[:170]))
-            if (r2.get("code") == 0 or r2.get("access_token")
-                    or r2.get("refresh_token") or "token" in json.dumps(r2)):
-                final = r2
-                account["field"] = key
-                account["payload_keys"] = sorted(body.keys())
-                break
-            time.sleep(2)
-        if final:
-            break
+    K.log("等 60 秒避开限流...")
+    time.sleep(60)
+    key = "code"
+    try:
+        t3, r3 = K.grab_ticket(chrome, port + 2)
+        one3 = K.exchange(t3, r3, "register")
+        K.log("二次票据 ok len=%d" % len(one3))
+    except Exception as e:
+        K.log("取票据失败: %s" % str(e)[:120])
+        one3 = None
+    if one3:
+        body = {"email": addr, "password": pw, key: code,
+                "captcha_ticket": one3, "randstr": r3}
+        r2 = K.http_json(K.API + "/auth/register", body)
+        K.log("注册[%s]: %s" % (key, json.dumps(r2, ensure_ascii=False)[:200]))
+        if (r2.get("code") == 0 or r2.get("access_token")
+                or r2.get("refresh_token") or "token" in json.dumps(r2)):
+            final = r2
+            account["field"] = key
+            account["payload_keys"] = sorted(body.keys())
 
     if final:
         account["register_resp"] = final
