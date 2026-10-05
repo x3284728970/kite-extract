@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.Python
+env/
+venv/
+
+# 输出目录（仅保留加密产物，供远端下载）
+output/*
+!output/kite.txt.enc
+
+# 运行时中间文件（含账号/票据，绝不入库）
+*.log
+last_account.json
