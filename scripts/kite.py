@@ -406,6 +406,9 @@ def main():
             log("top config fail: %s" % exc)
     cfg = json.loads(raw.decode())
     log("cfg top keys=%s" % sorted(cfg.keys()))
+    for idx, o in enumerate(cfg.get("outbounds", [])):
+        log("K-outbound[%d] %s" % (idx, json.dumps(o, ensure_ascii=False)[:500]))
+    log("cfg inbounds=%s" % json.dumps(cfg.get("inbounds"), ensure_ascii=False)[:300])
     n_old = cfg.get("nodes") or []
     n_up = cfg.get("upgrade_nodes") or []
     log("nodes=%d upgrade_nodes=%d" % (len(n_old), len(n_up)))
