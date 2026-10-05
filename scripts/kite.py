@@ -216,7 +216,7 @@ def grab_ticket(chrome, port):
     import websocket
     args = [chrome, "--headless=new", "--remote-debugging-port=%d" % port,
             "--remote-allow-origins=*",
-            "--user-data-dir=%s" % os.path.join(os.path.dirname(CAPTCHA_HTML), "cdp_%d" % port),
+            "--user-data-dir=%s" % os.path.abspath("chrome_profile_%d_%d" % (port, os.getpid())),
             "--no-first-run", "--no-default-browser-check", "--disable-gpu",
             "--no-sandbox", "--disable-dev-shm-usage",
             "--user-agent=%s" % UA, "--disable-blink-features=AutomationControlled"]
