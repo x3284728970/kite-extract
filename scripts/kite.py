@@ -287,9 +287,9 @@ def grab_ticket(chrome, port):
         time.sleep(0.5)
 
 
-def exchange(ticket, randstr):
+def exchange(ticket, randstr, scene="guest"):
     r = http_json(API + "/api/captcha/exchange",
-                  {"scene": "guest",
+                  {"scene": scene,
                    "payload": {"ticket": ticket, "randstr": randstr},
                    "provider": "tencent"})
     if r.get("ok"):

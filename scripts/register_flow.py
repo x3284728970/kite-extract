@@ -74,8 +74,8 @@ def main():
 
     ticket, randstr = K.grab_ticket(chrome, port)
     K.log("ticket=%s" % ticket[:40])
-    one = K.exchange(ticket, randstr)
-    K.log("one_ticket len=%d" % len(one))
+    one = K.exchange(ticket, randstr, "register")
+    K.log("one_ticket(register scene) len=%d" % len(one))
 
     # 第一步：发验证码
     r1 = K.http_json(K.API + "/auth/register",
@@ -101,7 +101,7 @@ def main():
     for key in ["code", "verify_code", "email_code", "emailCode", "verification_code"]:
         try:
             t3, r3 = K.grab_ticket(chrome, port + 2)
-            one3 = K.exchange(t3, r3)
+            one3 = K.exchange(t3, r3, "register")
         except Exception as e:
             K.log("取票据失败: %s" % str(e)[:100])
             time.sleep(20)
@@ -133,7 +133,7 @@ def main():
     # 第三步：登录并看节点
     try:
         t2, r2 = K.grab_ticket(chrome, port + 1)
-        one2 = K.exchange(t2, r2)
+        one2 = K.exchange(t2, r2, "login")
     except Exception as e:
         K.log("二次取票据失败: %s" % str(e)[:100])
         one2 = None
