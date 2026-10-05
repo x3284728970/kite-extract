@@ -389,6 +389,21 @@ def main():
             log("  %s = %s" % (k, json.dumps(v, ensure_ascii=False)[:200]))
     raw = decrypt_config(blob)
     log("decrypted size=%d head=%s" % (len(raw), raw[:120]))
+    n_top = r.get("nodes") or []
+    log("top-level nodes=%d more_nodes=%d" % (len(n_top), len(r.get("more_nodes") or [])))
+    if n_top:
+        log("top node sample: %s" % json.dumps(n_top[:2], ensure_ascii=False))
+    cblob2 = r.get("config") or ""
+    if cblob2:
+        try:
+            craw2 = decrypt_config(cblob2)
+            log("top config decrypted size=%d head=%s" % (len(craw2), craw2[:200]))
+            ccfg2 = json.loads(craw2.decode())
+            log("top config keys=%s" % sorted(ccfg2.keys()))
+            for idx, o in enumerate(ccfg2.get("outbounds", [])[:5]):
+                log("T-outbound[%d] %s" % (idx, json.dumps(o, ensure_ascii=False)[:400]))
+        except Exception as exc:
+            log("top config fail: %s" % exc)
     cfg = json.loads(raw.decode())
     log("cfg top keys=%s" % sorted(cfg.keys()))
     n_old = cfg.get("nodes") or []
