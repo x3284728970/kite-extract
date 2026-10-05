@@ -404,6 +404,20 @@ def main():
                 log("T-outbound[%d] %s" % (idx, json.dumps(o, ensure_ascii=False)[:400]))
         except Exception as exc:
             log("top config fail: %s" % exc)
+    ui = r.get("userinfo") or ""
+    if ui:
+        try:
+            uraw = decrypt_config(ui)
+            log("userinfo decrypted size=%d head=%s" % (len(uraw), uraw[:400]))
+            try:
+                uj = json.loads(uraw.decode())
+                log("userinfo json keys=%s" % sorted(uj.keys()) if isinstance(uj, dict) else "list len=%d" % len(uj))
+                for idx, o in enumerate((uj.get("outbounds") if isinstance(uj, dict) else uj) or []):
+                    log("U-outbound[%d] %s" % (idx, json.dumps(o, ensure_ascii=False)[:450]))
+            except Exception as exc:
+                log("userinfo not json: %s" % exc)
+        except Exception as exc:
+            log("userinfo decrypt fail: %s" % exc)
     cfg = json.loads(raw.decode())
     log("cfg top keys=%s" % sorted(cfg.keys()))
     for idx, o in enumerate(cfg.get("outbounds", [])):
