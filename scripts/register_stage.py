@@ -112,9 +112,8 @@ def stage_send(chrome):
     K.log("已存 gist stage=sent")
     return 0
 
-
 def stage_register(chrome):
-    """阶段二：用存下的码完成注册"""
+    """阶段二：用存下的码走 /auth/verify 完成注册（无需票据）"""
     st = gist_load()
     k = st.get("kite") or {}
     if k.get("stage") != "sent":
@@ -122,23 +121,16 @@ def stage_register(chrome):
         return 5
     addr, pw, code = k["email"], k["password"], k["code"]
     waited = int(time.time()) - k.get("sent_at", 0)
-    K.log("用 %s 注册，距发码 %d 秒" % (addr, waited))
+    K.log("verify %s，距发码 %d 秒" % (addr, waited))
 
-    port = 9800 + random.randint(0, 200)
-    ticket, randstr = K.grab_ticket(chrome, port)
-    one = K.exchange(ticket, randstr, "register")
-    for key in ["code", "verify_code", "email_code"]:
-        body = {"email": addr, "password": pw, key: code,
-                "captcha_ticket": one, "randstr": randstr}
-        r = K.http_json(K.API + "/auth/register", body)
-        K.log("注册[%s]: %s" % (key, json.dumps(r, ensure_ascii=False)[:200]))
-        if r.get("code") == 0 or r.get("access_token") or r.get("refresh_token"):
-            k.update({"stage": "registered", "field": key, "resp": r})
-            st["kite"] = k
-            gist_save(st)
-            K.log("*** 注册成功 ***")
-            return inspect_nodes(chrome, addr, pw, port + 1)
-        break
+    r = K.http_json(K.API + "/auth/verify", {"email": addr, "code": code})
+    K.log("verify: %s" % json.dumps(r, ensure_ascii=False)[:250])
+    if r.get("code") == 0 or r.get("access_token") or r.get("refresh_token"):
+        k.update({"stage": "registered", "resp": r})
+        st["kite"] = k
+        gist_save(st)
+        K.log("*** 注册成功 ***")
+        return inspect_nodes(chrome, addr, pw, 9900)
     return 6
 
 
