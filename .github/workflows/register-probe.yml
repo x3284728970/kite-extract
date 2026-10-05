@@ -1,0 +1,44 @@
+name: kite-register-probe
+
+concurrency:
+  group: kite-register-probe
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cache playwright chromium
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-chromium-${{ runner.os }}
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt playwright websocket-client
+          python -m playwright install --with-deps chromium
+
+      - name: Register probe
+        run: |
+          set +e
+          python scripts/register_probe.py
+          echo "rc=$?" >> "$GITHUB_STEP_SUMMARY"
+          exit 0
