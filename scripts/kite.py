@@ -221,7 +221,9 @@ def grab_ticket(chrome, port):
             "--no-sandbox", "--disable-dev-shm-usage",
             "--user-agent=%s" % UA, "--disable-blink-features=AutomationControlled"]
     args.append("about:blank")
-    proc = subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    log("chrome: %s port=%d" % (chrome, port))
+    errf = "/tmp/chrome_%d.err" % port
+    proc = subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=open(errf, "wb"))
     try:
         for _ in range(60):
             try:
@@ -230,7 +232,13 @@ def grab_ticket(chrome, port):
             except Exception:
                 time.sleep(0.4)
         else:
-            raise RuntimeError("chrome not ready")
+            tail = ""
+            try:
+                with open(errf, "rb") as fh:
+                    tail = fh.read()[-800:].decode("utf-8", "replace")
+            except Exception:
+                pass
+            raise RuntimeError("chrome not ready; stderr=%s" % tail)
         req = urllib.request.Request(
             "http://127.0.0.1:%d/json/new?%s" % (port, urllib.parse.quote("file://" + CAPTCHA_HTML, safe="")),
             method="PUT")
