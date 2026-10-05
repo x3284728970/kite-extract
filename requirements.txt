@@ -3,3 +3,5 @@ pycryptodome>=3.19.0
 cryptography>=41.0.0
 playwright
 websocket-client
+numpy
+pillow
