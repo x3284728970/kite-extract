@@ -1,9 +1,5 @@
 name: kite-register-probe
 
-concurrency:
-  group: kite-register-probe
-  cancel-in-progress: false
-
 permissions:
   contents: write
 
