@@ -388,7 +388,9 @@ def main():
     for o in cfg.get("outbounds", []):
         types[o.get("type")] = types.get(o.get("type"), 0) + 1
     log("outbound types: %s" % json.dumps(types, ensure_ascii=False))
-    log("raw config: %s" % json.dumps(cfg, ensure_ascii=False)[:600])
+    for idx, o in enumerate(cfg.get("outbounds", [])):
+        log("outbound[%d] keys=%s sample=%s" % (idx, sorted(o.keys()),
+            json.dumps({k: v for k, v in o.items() if k != "tls"}, ensure_ascii=False)[:300]))
 
     uris, seen = [], set()
     for o in cfg.get("outbounds", []):
