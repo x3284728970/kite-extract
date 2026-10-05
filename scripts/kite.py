@@ -388,6 +388,7 @@ def main():
     for o in cfg.get("outbounds", []):
         types[o.get("type")] = types.get(o.get("type"), 0) + 1
     log("outbound types: %s" % json.dumps(types, ensure_ascii=False))
+    log("raw config: %s" % json.dumps(cfg, ensure_ascii=False)[:600])
 
     uris, seen = [], set()
     for o in cfg.get("outbounds", []):
