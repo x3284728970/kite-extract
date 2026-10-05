@@ -383,14 +383,14 @@ def main():
     blob = r.get("refresh_token") or ""
     if not blob:
         raise RuntimeError("no refresh_token: %s" % json.dumps(r, ensure_ascii=False)[:200])
-    cfg = json.loads(decrypt_config(blob).decode())
-    types = {}
-    for o in cfg.get("outbounds", []):
-        types[o.get("type")] = types.get(o.get("type"), 0) + 1
-    log("outbound types: %s" % json.dumps(types, ensure_ascii=False))
-    for idx, o in enumerate(cfg.get("outbounds", [])):
-        log("outbound[%d] keys=%s sample=%s" % (idx, sorted(o.keys()),
-            json.dumps({k: v for k, v in o.items() if k != "tls"}, ensure_ascii=False)[:300]))
+    log("login resp keys=%s" % sorted(r.keys()))
+    for k, v in r.items():
+        if k != "refresh_token":
+            log("  %s = %s" % (k, json.dumps(v, ensure_ascii=False)[:200]))
+    raw = decrypt_config(blob)
+    log("decrypted size=%d head=%s" % (len(raw), raw[:120]))
+    cfg = json.loads(raw.decode())
+    log("cfg top keys=%s" % sorted(cfg.keys()))
 
     uris, seen = [], set()
     for o in cfg.get("outbounds", []):
