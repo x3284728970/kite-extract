@@ -39,6 +39,6 @@ jobs:
       - name: Register probe
         run: |
           set +e
-          python scripts/register_probe.py
+          python scripts/register_flow.py
           echo "rc=$?" >> "$GITHUB_STEP_SUMMARY"
           exit 0
