@@ -391,6 +391,25 @@ def main():
     log("decrypted size=%d head=%s" % (len(raw), raw[:120]))
     cfg = json.loads(raw.decode())
     log("cfg top keys=%s" % sorted(cfg.keys()))
+    n_old = cfg.get("nodes") or []
+    n_up = cfg.get("upgrade_nodes") or []
+    log("nodes=%d upgrade_nodes=%d" % (len(n_old), len(n_up)))
+    cblob = cfg.get("config") or ""
+    if cblob:
+        craw = decrypt_config(cblob)
+        log("config decrypted size=%d head=%s" % (len(craw), craw[:150]))
+        try:
+            ccfg = json.loads(craw.decode())
+            log("config keys=%s" % sorted(ccfg.keys()))
+            for idx, o in enumerate(ccfg.get("outbounds", [])[:4]):
+                log("outbound[%d] keys=%s val=%s" % (idx, sorted(o.keys()),
+                    json.dumps({k: v for k, v in o.items() if k != "tls"}, ensure_ascii=False)[:280]))
+                if o.get("tls"):
+                    log("  tls=%s" % json.dumps(o["tls"], ensure_ascii=False)[:280])
+        except Exception as exc:
+            log("config parse fail: %s" % exc)
+    if n_up:
+        log("upgrade sample: %s" % json.dumps(n_up[:2], ensure_ascii=False))
 
     uris, seen = [], set()
     for o in cfg.get("outbounds", []):
