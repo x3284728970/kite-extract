@@ -95,21 +95,18 @@ def main():
 
     # 用 access_token 探节点/订阅路由（runner 内消费，不落日志）
     H = {"Authorization": "Bearer " + at}
+    dev = "".join(random.choices("0123456789abcdef", k=16))
     probes = [
-        ("GET", "/api/server/info", None),
-        ("GET", "/api/server/info?domain=www.oracle.com", None),
-        ("GET", "/api/rewards/status", None),
-        ("GET", "/api/subscription", None),
-        ("POST", "/api/subscription", {}),
-        ("GET", "/api/subscription/current", None),
-        ("GET", "/api/subscription/info", None),
-        ("POST", "/api/subscription/activate", {}),
-        ("POST", "/api/subscription/trial", {}),
-        ("POST", "/api/nodes", {}),
-        ("GET", "/api/nodes", None),
-        ("POST", "/api/user/trial", {}),
-        ("GET", "/api/user/profile", None),
-        ("GET", "/auth/me", None),
+        ("GET", "/api/client/messages", None),
+        ("GET", "/api/client/messages/", None),
+        ("GET", "/api/client/messages/read-all", None),
+        ("POST", "/api/client/messages/read-all", {}),
+        ("GET", "/api/client/messages?device_id=" + dev, None),
+        ("POST", "/api/rewards/checkin", {"device_id": dev}),
+        ("GET", "/api/rewards/status?device_id=" + dev, None),
+        ("GET", "/api/subscription/create-checkout-session", None),
+        ("GET", "/api/support/tickets", None),
+        ("GET", "/api/app/check-update", None),
     ]
     for method, path, body in probes:
         cmd = ["curl", "-s", "-m", "15", "-X", method, K.API + path,
