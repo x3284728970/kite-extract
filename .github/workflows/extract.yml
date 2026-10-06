@@ -8,9 +8,6 @@ permissions:
   contents: write
 
 on:
-  schedule:
-    # 每 8 小时一次（UTC 00:00 / 08:00 / 16:00，即北京时间 08:00 / 16:00 / 00:00）
-    - cron: "0 */8 * * *"
   workflow_dispatch:
 
 jobs:
