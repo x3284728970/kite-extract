@@ -95,19 +95,33 @@ def main():
 
     # 用 access_token 探节点/订阅路由（runner 内消费，不落日志）
     H = {"Authorization": "Bearer " + at}
-    for path in ["/api/server/info", "/api/subscription/data",
-                 "/api/subscription/create", "/api/rewards/status"]:
-        for method in ["GET", "POST"]:
-            url = K.API + path
-            cmd = ["curl", "-s", "-m", "15", "-X", method, url]
-            if method == "POST":
-                cmd += ["-H", "Content-Type: application/json", "-d", "{}"]
-            cmd += ["-H", "Authorization: Bearer " + at]
-            r = subprocess.run(cmd, capture_output=True, text=True, timeout=25)
-            out = r.stdout
-            mask = (at[:8] + "...") if at else ""
-            K.log("%-4s %-28s %s" % (method, path,
-                                     out.replace(at, mask)[:400] if out else "(empty)"))
+    probes = [
+        ("GET", "/api/server/info", None),
+        ("GET", "/api/server/info?domain=www.oracle.com", None),
+        ("GET", "/api/rewards/status", None),
+        ("GET", "/api/subscription", None),
+        ("POST", "/api/subscription", {}),
+        ("GET", "/api/subscription/current", None),
+        ("GET", "/api/subscription/info", None),
+        ("POST", "/api/subscription/activate", {}),
+        ("POST", "/api/subscription/trial", {}),
+        ("POST", "/api/nodes", {}),
+        ("GET", "/api/nodes", None),
+        ("POST", "/api/user/trial", {}),
+        ("GET", "/api/user/profile", None),
+        ("GET", "/auth/me", None),
+    ]
+    for method, path, body in probes:
+        cmd = ["curl", "-s", "-m", "15", "-X", method, K.API + path,
+               "-H", "Authorization: Bearer " + at]
+        if body is not None:
+            cmd += ["-H", "Content-Type: application/json",
+                    "-d", json.dumps(body)]
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=25)
+        out = r.stdout
+        mask = (at[:8] + "...") if at else ""
+        K.log("%-4s %-42s %s" % (method, path,
+                                 out.replace(at, mask)[:4000] if out else "(empty)"))
     return 0
 
 
