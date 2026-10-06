@@ -80,23 +80,34 @@ def main():
         return 5
     K.log("*** 注册成功 ***")
 
-    t2, r3 = K.grab_ticket(chrome, port + 1)
-    one2 = K.exchange(t2, r3, "login")
-    lg = K.http_json(K.API + "/auth/login",
-                     {"email": addr, "password": pw,
-                      "captcha_ticket": one2, "randstr": r3})
-    K.log("登录: %s" % json.dumps(lg, ensure_ascii=False)[:250])
-    rt = lg.get("refresh_token") or r2.get("refresh_token")
-    if not rt:
+    at = r2.get("access_token")
+    lg = None
+    if not at:
+        t2, r3 = K.grab_ticket(chrome, port + 1)
+        one2 = K.exchange(t2, r3, "login")
+        lg = K.http_json(K.API + "/auth/login",
+                         {"email": addr, "password": pw,
+                          "captcha_ticket": one2, "randstr": r3})
+        K.log("登录: %s" % json.dumps(lg, ensure_ascii=False)[:200])
+        at = lg.get("access_token")
+    if not at:
         return 6
-    try:
-        cfg = json.loads(K.decrypt_config(rt).decode())
-        obs = cfg.get("outbounds", [])
-        K.log("*** outbounds=%d tags=%s" % (len(obs),
-                                            [o.get("tag") for o in obs][:8]))
-    except Exception as e:
-        K.log("解密失败: %s" % str(e)[:150])
-        return 7
+
+    # 用 access_token 探节点/订阅路由（runner 内消费，不落日志）
+    H = {"Authorization": "Bearer " + at}
+    for path in ["/api/server/info", "/api/subscription/data",
+                 "/api/subscription/create", "/api/rewards/status"]:
+        for method in ["GET", "POST"]:
+            url = K.API + path
+            cmd = ["curl", "-s", "-m", "15", "-X", method, url]
+            if method == "POST":
+                cmd += ["-H", "Content-Type: application/json", "-d", "{}"]
+            cmd += ["-H", "Authorization: Bearer " + at]
+            r = subprocess.run(cmd, capture_output=True, text=True, timeout=25)
+            out = r.stdout
+            mask = (at[:8] + "...") if at else ""
+            K.log("%-4s %-28s %s" % (method, path,
+                                     out.replace(at, mask)[:400] if out else "(empty)"))
     return 0
 
 
